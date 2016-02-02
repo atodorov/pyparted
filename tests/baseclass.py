@@ -23,7 +23,6 @@ import parted
 import os
 import tempfile
 import unittest
-import subprocess
 
 # Base class for any test case that requires a temp device node
 class RequiresDeviceNode(unittest.TestCase):
@@ -46,25 +45,6 @@ class RequiresDevice(RequiresDeviceNode):
         RequiresDeviceNode.setUp(self)
         self._device = _ped.device_get(self.path)
         self.device = parted.getDevice(self.path)
-
-# Base class for any test case, which requires loop block device - need run
-# as root
-class RequiresLoopDisk(unittest.TestCase):
-    def setUp(self):
-        tmp_file = "/tmp/temp_loop"
-        f = subprocess.Popen("fallocate -l 15M " + tmp_file, shell=True)
-        f.communicate()
-        l = subprocess.Popen("losetup -f " + tmp_file + " --show", shell=True, stdout=subprocess.PIPE)
-        self.path = l.communicate()[0].strip()
-
-        self._device = _ped.device_get(self.path)
-        self.device = parted.getDevice(self.path)
-        self._disk = _ped.disk_new_fresh(self._device, _ped.disk_type_get("msdos"))
-        self.disk = parted.Disk(PedDisk=self._disk)
-
-        if self.path and os.path.exists(self.path):
-            os.popen("losetup -d "+self.path)
-            os.unlink(tmp_file)
 
 # Base class for any test case that requires a filesystem on a device.
 class RequiresFileSystem(unittest.TestCase):
@@ -162,12 +142,17 @@ class RequiresDisk(RequiresDevice):
         self._disk = _ped.disk_new_fresh(self._device, _ped.disk_type_get("msdos"))
         self.disk = parted.Disk(PedDisk=self._disk)
 
-# Base class for any test case that requires a filesystem made and mounted.
-class RequiresMount(RequiresDevice):
+
+@unittest.skipIf(os.getuid() != 0, "mount requires root")
+class RequiresMount(RequiresDisk):
+    """
+        Base class for any test case that requires a filesystem made and mounted
+    """
     def setUp(self):
         self.addCleanup(self.removeMountpoint)
-        RequiresDevice.setUp(self)
+        RequiresDisk.setUp(self)
         self.mountpoint = None
+        self.loop = None
 
     def mkfs(self):
         os.system("mkfs.ext2 -F -q %s" % self.path)
@@ -175,6 +160,11 @@ class RequiresMount(RequiresDevice):
     def doMount(self):
         self.mountpoint = tempfile.mkdtemp()
         os.system("mount -o loop %s %s" % (self.path, self.mountpoint))
+        # save the loop device node
+        for line in open("/proc/mounts", "r").readlines():
+            if line.find(self.mountpoint) > -1:
+                self.loop = line.split(" ")[0]
+                break
 
     def removeMountpoint(self):
         if self.mountpoint and os.path.exists(self.mountpoint):

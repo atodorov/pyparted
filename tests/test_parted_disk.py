@@ -24,8 +24,7 @@ import parted
 import unittest
 import os
 
-from tests.baseclass import RequiresDisk, RequiresLoopDisk
-import subprocess
+from tests.baseclass import *
 
 # One class per method, multiple tests per class.  For these simple methods,
 # that seems like good organization.  More complicated methods may require
@@ -172,15 +171,19 @@ class DiskGetMaxSupportedPartitionCountTestCase(RequiresDisk):
     def runTest(self):
         self.assertEqual(self.disk.maxSupportedPartitionCount, 64)
 
-@unittest.skipIf(os.getuid() != 0, "must be run as root")
-class DiskGetMaxSupportedPartitionCountLoopDiskTestCase(RequiresLoopDisk):
+class DiskGetMaxSupportedPartitionCountLoopDiskTestCase(RequiresMount):
     """If value ext_range for device is available, disk.maxSupportedPartitionCount
     should return this value.
     """
+    def setUp(self):
+        RequiresMount.setUp(self)
+        self.mkfs()
+        self.doMount()
+
     def runTest(self):
-        path_ext_range = "/sys/block/" + self.path.split("/")[2] + "/ext_range"
-        f = subprocess.Popen("cat " + path_ext_range, shell=True, stdout=subprocess.PIPE)
-        value_ext_range = f.communicate()[0].strip()
+        path_ext_range = "/sys/block/%s/ext_range" % self.loop.split("/")[2]
+        value_ext_range = open(path_ext_range, 'r').read().strip()
+        value_ext_range = int(value_ext_range)
         self.assertEqual(self.disk.maxSupportedPartitionCount, value_ext_range)
 
 class DiskMaxPartitionLengthTestCase(RequiresDisk):
