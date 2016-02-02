@@ -96,8 +96,6 @@ class DiskAddPartitionTestCase(RequiresDisk):
     """
     def runTest(self):
         self.disk.setFlag(parted.DISK_CYLINDER_ALIGNMENT)
-        flag = self.disk.getFlag(parted.DISK_CYLINDER_ALIGNMENT)
-        self.disk.setFlag(flag)
 
         length = 100
         geom = parted.Geometry(self.device, start=100, length=length)
