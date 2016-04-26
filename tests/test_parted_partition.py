@@ -23,7 +23,7 @@
 import parted
 import unittest
 
-from tests.baseclass import RequiresDisk
+from tests.baseclass import RequiresDisk, RequiresPartition
 
 # One class per method, multiple tests per class.  For these simple methods,
 # that seems like good organization.  More complicated methods may require
@@ -34,11 +34,11 @@ class PartitionNewTestCase(unittest.TestCase):
         # TODO
         self.fail("Unimplemented test case.")
 
-@unittest.skip("Unimplemented test case.")
-class PartitionGetSetTestCase(unittest.TestCase):
+class PartitionGetSetTestCase(RequiresPartition):
     def runTest(self):
-        # TODO
-        self.fail("Unimplemented test case.")
+        with self.assertRaises((AttributeError, TypeError)):
+            #setattr(self.part, "geometry", parted.Geometry(self.device, start=10, length=20))
+            self.part.geometry = parted.Geometry(self.device, start=10, length=20)
 
 @unittest.skip("Unimplemented test case.")
 class PartitionGetFlagTestCase(unittest.TestCase):

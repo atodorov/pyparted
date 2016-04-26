@@ -62,8 +62,10 @@ class PartitionGetSetTestCase(RequiresPartition):
         self.assertRaises(exn, setattr, self._part, "num", 1)
         self.assertRaises(exn, setattr, self._part, "fs_type",
             _ped.file_system_type_get("fat32"))
-        self.assertRaises(exn, setattr, self._part, "geom",
-                                     _ped.Geometry(self._device, 10, 20))
+        with self.assertRaises((AttributeError, TypeError)):
+#            setattr(self._part, "geom", _ped.Geometry(self._device, 10, 20))
+            self._part.geom = _ped.Geometry(self._device, 10, 20)
+
         self.assertRaises(exn, setattr, self._part, "disk", self._disk)
 
         # Check that values have the right type.

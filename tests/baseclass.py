@@ -168,6 +168,12 @@ class RequiresPartition(RequiresDisk):
         self._part = _ped.Partition(disk=self._disk, type=_ped.PARTITION_NORMAL,
                                     start=0, end=100, fs_type=_ped.file_system_type_get("ext2"))
 
+        geom = parted.Geometry(self.device, start=100, length=100)
+        fs = parted.FileSystem(type='ext2', geometry=geom)
+        self.part = parted.Partition(disk=self.disk, type=parted.PARTITION_NORMAL,
+                                    geometry=geom, fs=fs)
+
+
 # Base class for any test case that requires a hash table of all
 # _ped.DiskType objects available
 class RequiresDiskTypes(unittest.TestCase):
